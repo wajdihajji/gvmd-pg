@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright (C) 2016-2018 Greenbone Networks GmbH
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Escalator method script: SCP.
+
+USERNAME=$1
+HOST=$2
+DEST=$3
+KNOWN_HOSTS=$4
+PRIVATE_KEY_FILE=$5
+PASSWORD_FILE=$6
+REPORT_FILE=$7
+
+KNOWN_HOSTS_FILE=`mktemp` || exit 1
+echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
+
+ERROR_FILE=`mktemp` || exit 1
+
+log_error() {
+  # remove \r used in line feed by scp or sshpass (\r\n)
+  # which can make journalctl interpret the output as blob data
+  MESSAGE=`echo "$1" | tr -d '\r'`
+  logger "SCP alert: $MESSAGE"
+  echo "$MESSAGE" >&2
+}
+
+# Escape destination twice because it is also expanded on the remote end.
+if [ -z "$PRIVATE_KEY_FILE" ]
+then
+  sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+else
+  sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:'${DEST}'" 2>$ERROR_FILE
+fi
+
+EXIT_CODE=$?
+
+ERROR_SHORT=`head -n 3 $ERROR_FILE`
+
+if [ $EXIT_CODE -eq 1 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid command line argument: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 2 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Conflicting arguments given: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 3 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: General runtime error: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 4 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Unrecognized response from ssh (parse error): $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 5 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Invalid/incorrect password: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 6 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 127 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found: $ERROR_SHORT"
+elif [ $EXIT_CODE -ne 0 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: $ERROR_SHORT"
+fi
+
+rm $KNOWN_HOSTS_FILE
+rm $PASSWORD_FILE
+rm $ERROR_FILE
+
+exit $EXIT_CODE

@@ -1,0 +1,15 @@
+# Defaults for Greenbone Vulnerability Manager initscript
+# sourced by /etc/init.d/gvmd
+# installed at /etc/default/gvmd by the maintainer scripts
+
+# For more information see `man gvmd`
+
+# To set listening address:
+# 
+# LISTEN_ADDRESS="0.0.0.0"
+
+# To set listening port number:
+#
+# PORT_NUMBER=9390
+
+[ -e "/etc/default/gvmd-pg" ] && . /etc/default/gvmd-pg

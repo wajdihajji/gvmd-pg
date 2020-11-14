@@ -1,0 +1,17 @@
+gvmd (9.0.1-2) focal; urgency=medium
+
+  * Import upstream version 9.0.1
+
+ -- Mohammad Razavi <mrazavi64@gmail.com>  Fri, 29 May 2020 11:08:45 +0430
+
+gvmd (9.0.0-1) bionic; urgency=medium
+
+  * Import upstream version 9.0.0
+
+ -- Mohammad Razavi <mrazavi64@gmail.com>  Sun, 27 Oct 2019 11:43:09 +0330
+
+gvmd (8.0.0-3) bionic; urgency=medium
+
+  * Initial release (imported upstream version 8.0.0)
+
+ -- Mohammad Razavi <mrazavi64@gmail.com>  Fri, 12 Apr 2019 20:09:31 +0430

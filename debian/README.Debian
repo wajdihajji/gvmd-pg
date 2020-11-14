@@ -1,0 +1,10 @@
+gvmd for Debian
+-------------
+
+xml-twig-tools is added as a recommendation dependency because it throws logs like this:
+
+sh: 1: xml_split: not found
+
+It seems that gvmd is using xml_split of xml-twig-tools.
+
+ -- Mohammad Razavi <mrazavi64@gmail.com>  Tue, 21 Jul 2020 18:40:15 +0430

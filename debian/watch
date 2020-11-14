@@ -1,0 +1,5 @@
+version=3
+
+opts=uversionmangle=s/\+beta/~beta/ \
+https://github.com/greenbone/gvm/releases  \
+        /greenbone/gvmd/archive/v(.*)\.tar\.gz

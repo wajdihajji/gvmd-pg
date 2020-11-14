@@ -1,0 +1,58 @@
+Source: gvmd
+Section: admin
+Priority: optional
+Maintainer: Mohammad Razavi <mrazavi64@gmail.com>
+Build-Depends: debhelper-compat (= 12), cmake, pkg-config, cppcheck, xmltoman, doxygen, libglib2.0-dev, libgnutls28-dev, libgcrypt20-dev, libgpgme-dev, libgvm-dev (>= 11.0.1), libical-dev, libpq-dev, postgresql-server-dev-12
+Standards-Version: 4.4.1
+Homepage: https://community.greenbone.net/
+Vcs-Browser: https://github.com/greenbone/gvmd
+Vcs-git: https://github.com/greenbone/gvmd.git
+
+Package: gvmd-common
+Architecture: any
+Depends: lsb-base, ${shlibs:Depends}, ${misc:Depends}
+Recommends: texlive-latex-base, xsltproc, xml-twig-tools, gnutls-bin, rsync
+Conflicts: openvas9-manager
+Suggests: xmlstarlet, zip, python3, python3-lxml, smbclient, snmp, gnupg, openssh-client, sshpass, socat, haveged
+Description: remote network security auditor - manager
+ The Greenbone Vulnerability Management Solution (previously known as
+ Open Vulnerability Assessment System) is a modular security auditing tool,
+ used for testing remote systems for vulnerabilities that should be fixed.
+ .
+ It is made up of several parts: a manager i.e. the main server gvmd.
+ A scanner openvas-scanner that execute vulnerability checking scripts.
+ A  web interface called Greenbone Security Assistant gsad.
+ .
+ This package contains the manager (gvmd) part common files for
+ different database backends.
+
+Package: gvmd-pg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, gvmd-common (= ${binary:Version}), debconf, dbconfig-pgsql | dbconfig-no-thanks
+Recommends: postgresql-client, libgvm-pg-server0
+Description: remote network security auditor - manager - with postgreql backend
+ The Greenbone Vulnerability Management Solution (previously known as
+ Open Vulnerability Assessment System) is a modular security auditing tool,
+ used for testing remote systems for vulnerabilities that should be fixed.
+ .
+ It is made up of several parts: a manager i.e. the main server gvmd.
+ A scanner openvas-scanner that execute vulnerability checking scripts.
+ A  web interface called Greenbone Security Assistant gsad.
+ .
+ This package contains the manager (gvmd) part, with postgreql backend.
+
+Package: libgvm-pg-server0
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: remote network security auditor - manager - postgreql extensions
+ The Greenbone Vulnerability Management Solution (previously known as
+ Open Vulnerability Assessment System) is a modular security auditing tool,
+ used for testing remote systems for vulnerabilities that should be fixed.
+ .
+ It is made up of several parts: a manager i.e. the main server gvmd.
+ A scanner openvas-scanner that execute vulnerability checking scripts.
+ A  web interface called Greenbone Security Assistant gsad.
+ .
+ This package contains the postgresql extensions that should be installed
+ along side the postgresql server for gvmd to work with postgreql backend.

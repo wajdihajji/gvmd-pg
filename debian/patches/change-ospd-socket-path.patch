@@ -1,0 +1,11 @@
+--- a/src/manage_sql.c
++++ b/src/manage_sql.c
+@@ -84,7 +84,7 @@
+ /**
+  * @brief Socket of default scanner.
+  */
+-#define OPENVAS_DEFAULT_SOCKET "/tmp/ospd.sock"
++#define OPENVAS_DEFAULT_SOCKET "/var/run/ospd/ospd.sock"
+ 
+ #ifdef DEBUG_FUNCTION_NAMES
+ #include <dlfcn.h>

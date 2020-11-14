@@ -1,0 +1,135 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+## GVM_BUILD_DIR = obj-$(DEB_BUILD_GNU_TYPE)
+
+.PHONY: override_dh_auto_configure override_dh_installchangelogs override_dh_installinit
+
+####
+#### The GVM version 8 was supporting both sqlite and postgresql as
+#### the back end database but they dropped the sqlite support in GVM
+#### version 9. In version 8 we run "dh_auto_configure" two times and
+#### copy the result directory to directories with -pg and -sqlite
+#### suffixes and use update-alternatives to manage debian binary
+#### packages. The related Makefile targets to do this is mentioned
+#### here as comments so maybe later in newer versions if we wanted to
+#### add support for other databases at the same time, it could be
+#### reused.
+####
+##
+## override_dh_auto_clean:
+##         rm -rf $(GVM_BUILD_DIR)-pg
+##         dh_auto_clean
+##
+## override_dh_auto_configure:
+##         dh_auto_configure -- -DLOCALSTATEDIR=/var -DSYSCONFDIR=/etc
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-sqlite
+##         dh_auto_configure -- -DLOCALSTATEDIR=/var -DSYSCONFDIR=/etc -DBACKEND=POSTGRESQL -DLIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-pg
+##         mv $(GVM_BUILD_DIR)-sqlite $(GVM_BUILD_DIR)
+##
+## override_dh_auto_build:
+##         dh_auto_build
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-sqlite
+##         mv $(GVM_BUILD_DIR)-pg $(GVM_BUILD_DIR)
+##         dh_auto_build
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-pg
+##         mv $(GVM_BUILD_DIR)-sqlite $(GVM_BUILD_DIR)
+##
+## override_dh_auto_install:
+##         dh_auto_install --destdir=$(shell realpath debian/gvmd-sqlite)
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-sqlite
+##         mv $(GVM_BUILD_DIR)-pg $(GVM_BUILD_DIR)
+##         dh_auto_install --destdir=$(shell realpath debian/gvmd-pg)
+##         mv $(GVM_BUILD_DIR) $(GVM_BUILD_DIR)-pg
+##         mv $(GVM_BUILD_DIR)-sqlite $(GVM_BUILD_DIR)
+##
+## #       # install dbconfig-common files for gvmd-pg
+##         mkdir -p debian/gvmd-pg/usr/share/dbconfig-common/data/gvmd-pg/install-dbadmin
+##         cp debian/gvmd-pg.dbconfig-common.install-dbadmin debian/gvmd-pg/usr/share/dbconfig-common/data/gvmd-pg/install-dbadmin/pgsql
+##
+## #       # move /usr/lib files from gvmd-pg to libgvm-pg-server0
+##         mkdir debian/libgvm-pg-server0/usr
+##         mv debian/gvmd-pg/usr/lib debian/libgvm-pg-server0/usr/
+##
+## #       # remove extra files not required by any of debain packages
+##         rm debian/gvmd-sqlite/usr/share/gvm/gvm-lsc-rpm-creator.sh
+##         rm debian/gvmd-pg/usr/share/gvm/gvm-lsc-rpm-creator.sh
+##
+## #       # remove gvmd symbolic link (update-alternatives will create it for us)
+##         rm debian/gvmd-sqlite/usr/sbin/gvmd
+##         rm debian/gvmd-pg/usr/sbin/gvmd
+##
+## #       # rename manpages to have sqlite/pg suffix for update-alternatives
+##         mv debian/gvmd-sqlite/usr/share/man/man8/gvmd.8 debian/gvmd-sqlite/usr/share/man/man8/gvmd-sqlite.8
+##         mv debian/gvmd-pg/usr/share/man/man8/gvmd.8 debian/gvmd-pg/usr/share/man/man8/gvmd-pg.8
+##
+##         mv debian/gvmd-sqlite/usr/sbin/gvm-portnames-update debian/gvmd-sqlite/usr/sbin/gvm-portnames-update-sqlite
+##         mv debian/gvmd-pg/usr/sbin/gvm-portnames-update debian/gvmd-pg/usr/sbin/gvm-portnames-update-pg
+##
+## #       # extract common files and make sure gmvd-sqlite and gvmd-pg
+## #       # don't have conflict
+##         @for psql_file in $$(find debian/gvmd-pg -not -path 'debian/gvmd-pg/DEBIAN/*' -not -path 'debian/gvmd-pg/usr/share/doc/gvmd-pg/*' -type f); do \
+##                 sqlite_file=$$(echo $$psql_file | sed 's|^debian/gvmd-pg/|debian/gvmd-sqlite/|'); \
+##                 common_file=$$(echo $$psql_file | sed 's|^debian/gvmd-pg/|debian/gvmd-common/|'); \
+##                 [ ! -e $$sqlite_file ] && continue; \
+##                 if cmp --silent $$psql_file $$sqlite_file; then \
+##                         mkdir -p $$(dirname $$common_file); \
+##                         mv $$sqlite_file $$common_file; \
+##                         rm $$psql_file; \
+##                 else \
+##                         echo "Error: different files in postgresql/sqlite packages: $$sqlite_file"; \
+##                         ERROR=1; \
+##                 fi; \
+##         done; \
+##         [ "x$$ERROR" = "x" ] || false;
+##
+## override_dh_installchangelogs:
+##         dh_installchangelogs -k CHANGES
+##
+## override_dh_installinit:
+##         dh_installinit --name=gvmd --only-scripts -pgvmd-sqlite
+##         dh_installinit --name=gvmd --only-scripts -pgvmd-pg
+##         dh_installinit --name=gvmd --no-scripts --remaining
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DLOCALSTATEDIR=/var -DSYSCONFDIR=/etc -DBACKEND=POSTGRESQL -DLIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+
+override_dh_auto_install:
+	dh_auto_install --destdir=$(shell realpath debian/gvmd-common)
+
+#	# install dbconfig-common files for gvmd-pg
+	mkdir -p debian/gvmd-pg/usr/share/dbconfig-common/data/gvmd-pg/install-dbadmin
+	cp debian/gvmd-pg.dbconfig-common.install-dbadmin debian/gvmd-pg/usr/share/dbconfig-common/data/gvmd-pg/install-dbadmin/pgsql
+
+#	# move /usr/lib files from gvmd-common to libgvm-pg-server0
+	mkdir -p debian/libgvm-pg-server0/usr
+	mv debian/gvmd-common/usr/lib debian/libgvm-pg-server0/usr/
+
+#	# remove extra files not required by any of debain packages
+	rm debian/gvmd-common/usr/share/gvm/gvm-lsc-rpm-creator.sh
+
+#	# move the "gvmd" binary, its man page and
+#	# "gvm-portnames-update" script to gvmd-pg package
+#	# (update-alternatives will create files without -pg suffix)
+	mkdir -p debian/gvmd-pg/usr/sbin debian/gvmd-pg/usr/share/man/man8
+	mv debian/gvmd-common/usr/sbin/gvmd debian/gvmd-pg/usr/sbin/gvmd-pg
+	mv debian/gvmd-common/usr/share/man/man8/gvmd.8 debian/gvmd-pg/usr/share/man/man8/gvmd-pg.8
+	mv debian/gvmd-common/usr/sbin/gvm-portnames-update debian/gvmd-pg/usr/sbin/gvm-portnames-update-pg
+
+override_dh_installchangelogs:
+	dh_installchangelogs -k CHANGELOG.md
+
+override_dh_installinit:
+	dh_installinit --name=gvmd --only-scripts -pgvmd-pg
+	dh_installinit --name=gvmd --no-scripts --remaining
+
+override_dh_auto_test:
+	true
+
+%:
+	dh $@
