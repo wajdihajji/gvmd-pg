@@ -21,6 +21,7 @@ Prerequisites:
 * pkg-config
 * libical >= 1.0.0
 * xml_split (recommended, lowers sync RAM usage, Debian package: xml-twig-tools)
+* xsltproc (Debian package: xsltproc)
 
 Prerequisites for certificate generation:
 * GnuTLS certtool
@@ -325,6 +326,35 @@ An administrator user can later create further users or administrators via
 clients like the Greenbone Security Assistant (GSA).
 
 Also, the new user can change their password via GSA.
+
+
+## Keeping the feeds up-to-date
+
+The `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
+following scripts regularely (e.g. via a cron entry):
+
+    greenbone-scapdata-sync
+    greenbone-certdata-sync
+
+Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
+and should be called after syncing the latter.
+
+
+## Configure the default OSPD scanner socket path
+
+By default, Manager tries to connect to the default OSPD scanner via the following path:
+
+    /tmp/ospd.sock
+
+If this path doesn't match your setup you need to change the socket path accordingly.
+
+Get the UUID of the `OpenVAS Default` scanner:
+
+    gvmd --get-scanners
+
+Update the path (example, path needs to be adapted accordingly):
+
+    gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd.sock
 
 
 ## Logging Configuration

@@ -9739,13 +9739,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       char *pos = strchr (value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<value>%s</value>", value);
-      while (pos)
-        {
-          char *pos2 = strchr (++pos, ';');
-          if (pos2) *pos2 = '\0';
-          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
-          pos = pos2;
-        }
     }
   else if (value
            && type
@@ -9759,10 +9752,29 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       && type
       && (strcmp (type, "radio") == 0))
     {
+      char *pos;
+      gchar *alts;
+
       /* Handle the other possible values. */
-      char *pos = strchr (default_value, ';');
+
+      alts = g_strdup (default_value);
+
+      pos = strchr (default_value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
+
+      pos = alts;
+      while (1)
+        {
+          char *pos2 = strchr (pos, ';');
+          if (pos2) *pos2 = '\0';
+          if (value == NULL || strcmp (pos, value))
+            buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
+          if (pos2 == NULL)
+            break;
+          pos = pos2 + 1;
+        }
+      g_free (alts);
     }
   else if (default_value
            && type
@@ -21046,8 +21058,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 2:
                     SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("create_asset",
-                                          "Name may only contain alphanumeric"
-                                          " characters"));
+                                          "Name must be an IP address"));
                     log_event_fail ("asset", "Asset", NULL, "created");
                     break;
                   case 99:

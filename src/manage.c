@@ -2677,19 +2677,19 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         if (config == 0)
           goto fail_target;
 
-        if (gvm_server_sendf (&connection->session,
-                              "<create_config>"
-                              "<get_configs_response"
-                              " status=\"200\""
-                              " status_text=\"OK\">"
-                              "<config id=\"XXX\">"
-                              "<type>0</type>"
-                              "<name>%s</name>"
-                              "<comment>"
-                              "Slave config created by Master"
-                              "</comment>"
-                              "<preferences>",
-                              name))
+        if (gvm_server_sendf_xml (&connection->session,
+                                  "<create_config>"
+                                  "<get_configs_response"
+                                  " status=\"200\""
+                                  " status_text=\"OK\">"
+                                  "<config id=\"XXX\">"
+                                  "<type>0</type>"
+                                  "<name>%s</name>"
+                                  "<comment>"
+                                  "Slave config created by Master"
+                                  "</comment>"
+                                  "<preferences>",
+                                  name))
           goto fail_target;
 
         /* Send NVT timeout preferences where a timeout has been
@@ -2701,20 +2701,22 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
 
             timeout = config_timeout_iterator_value (&prefs);
 
-            if (timeout && strlen (timeout)
-                && gvm_server_sendf (&connection->session,
-                                     "<preference>"
-                                     "<nvt oid=\"%s\">"
-                                     "<name>%s</name>"
-                                     "</nvt>"
-                                     "<name>Timeout</name>"
-                                     "<id>0</id>"
-                                     "<type>entry</type>"
-                                     "<value>%s</value>"
-                                     "</preference>",
-                                     config_timeout_iterator_oid (&prefs),
-                                     config_timeout_iterator_nvt_name (&prefs),
-                                     timeout))
+            if (timeout
+                && strlen (timeout)
+                && gvm_server_sendf_xml
+                     (&connection->session,
+                      "<preference>"
+                      "<nvt oid=\"%s\">"
+                      "<name>%s</name>"
+                      "</nvt>"
+                      "<name>Timeout</name>"
+                      "<id>0</id>"
+                      "<type>entry</type>"
+                      "<value>%s</value>"
+                      "</preference>",
+                      config_timeout_iterator_oid (&prefs),
+                      config_timeout_iterator_nvt_name (&prefs),
+                      timeout))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2751,7 +2753,7 @@ slave_setup (gvm_connection_t *connection, const char *name, task_t task,
         while (next (&selectors))
           {
             int type = nvt_selector_iterator_type (&selectors);
-            if (gvm_server_sendf
+            if (gvm_server_sendf_xml
                  (&connection->session,
                   "<nvt_selector>"
                   "<name>%s</name>"
@@ -4661,15 +4663,19 @@ run_osp_task (task_t task, int from, char **report_id)
  * @brief Perform a CVE "scan" on a host.
  *
  * @param[in]  task      Task.
+ * @param[in]  report    The report to add the host, results and details to.
  * @param[in]  gvm_host  Host.
  *
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, gvm_host_t *gvm_host)
+cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 {
   report_host_t report_host;
   gchar *ip, *host;
+
+  assert (task);
+  assert (report);
 
   host = gvm_host_value_str (gvm_host);
 
@@ -4679,7 +4685,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
   g_debug ("%s: ip: %s", __FUNCTION__, ip);
 
-  /* Get the last report that applies to the host. */
+  /* Get the last report host that applies to the host IP address. */
 
   if (host_nthlast_report_host (ip, &report_host, 1))
     {
@@ -4711,11 +4717,13 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
             {
               const char *app, *cve;
               double severity;
-              gchar *desc, *location;
+              gchar *desc;
+              iterator_t locations_iter;
+              GString *locations;
               result_t result;
 
-              if (global_current_report && (prognosis_report_host == 0))
-                prognosis_report_host = manage_report_host_add (global_current_report,
+              if (prognosis_report_host == 0)
+                prognosis_report_host = manage_report_host_add (report,
                                                                 ip,
                                                                 start_time,
                                                                 0);
@@ -4724,7 +4732,34 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
               app = prognosis_iterator_cpe (&prognosis);
               cve = prognosis_iterator_cve (&prognosis);
-              location = app_location (report_host, app);
+              locations = g_string_new("");
+
+              insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                         "CVE Scanner", "App", app);
+
+              init_app_locations_iterator (&locations_iter, report_host, app);
+
+              while (next (&locations_iter))
+                {
+                  const char *location;
+                  location = app_locations_iterator_location (&locations_iter);
+
+                  if (locations->len)
+                    g_string_append (locations, ", ");
+                  g_string_append (locations, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", app, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_at",
+                                             location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_by",
+                                             /* Detected by itself. */
+                                             cve);
+                }
 
               desc = g_strdup_printf ("The host carries the product: %s\n"
                                       "It is vulnerable according to: %s.\n"
@@ -4733,11 +4768,11 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
                                       "%s",
                                       app,
                                       cve,
-                                      location
+                                      locations->len
                                        ? "The product was found at: "
                                        : "",
-                                      location ? location : "",
-                                      location ? ".\n" : "",
+                                      locations->len ? locations->str : "",
+                                      locations->len ? ".\n" : "",
                                       prognosis_iterator_description
                                        (&prognosis));
 
@@ -4746,28 +4781,10 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
 
               result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
-              if (global_current_report)
-                {
-                  report_add_result (global_current_report, result);
 
-                  insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                             "CVE Scanner", "App", app);
+              report_add_result (report, result);
 
-                  if (location)
-                    {
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", app, location);
-
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", "detected_at",
-                                                 location);
-                      insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                                 "CVE Scanner", "detected_by",
-                                                 /* Detected by itself. */
-                                                 cve);
-                    }
-                }
-              g_free (location);
+              g_string_free (locations, TRUE);
             }
           cleanup_iterator (&prognosis);
 
@@ -4776,7 +4793,7 @@ cve_scan_host (task_t task, gvm_host_t *gvm_host)
               /* Complete the report_host. */
 
               report_host_set_end_time (prognosis_report_host, time (NULL));
-              insert_report_host_detail (global_current_report, ip, "cve", "",
+              insert_report_host_detail (report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
             }
         }
@@ -4873,7 +4890,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, gvm_host))
+    if (cve_scan_host (task, global_current_report, gvm_host))
       {
         set_task_interrupted (task,
                               "Failed to get nthlast report."

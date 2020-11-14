@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [9.0.2] (unreleased)
+
+### Added
+- Add filter columns for special NVT tags [#1200](https://github.com/greenbone/gvmd/pull/1200)
+
+### Changed
+- The xsltproc binary is now marked as mandatory [#1261](https://github.com/greenbone/gvmd/pull/1261)
+
+### Fixed
+- Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
+- Fix handling of duplicate settings [#1105](https://github.com/greenbone/gvmd/pull/1105)
+- Fix table check in gvm-migrate-to-postgres [#1118](https://github.com/greenbone/gvmd/pull/1118)
+- Fix XML escaping in setting up GMP scans [#1122](https://github.com/greenbone/gvmd/pull/1123)
+- Fix name handling when creating host assets [#1184](https://github.com/greenbone/gvmd/pull/1184) [#1215](https://github.com/greenbone/gvmd/pull/1215)
+- Fix and simplify parse_iso_time [#1130](https://github.com/greenbone/gvmd/pull/1130)
+- Fix gvm-manage-certs. [#1139](https://github.com/greenbone/gvmd/pull/1139)
+- Fix CVE scanner and results handling [#1142](https://github.com/greenbone/gvmd/pull/1142)
+- Update to gvm-portnames-update to use new nomenclature [#1166](https://github.com/greenbone/gvmd/pull/1166)
+- Fix the description of the Raw and Anonymous XML report formats [#1166](https://github.com/greenbone/gvmd/pull/1191)
+- Quote identifiers in SQL functions using EXECUTE [#1193](https://github.com/greenbone/gvmd/pull/1193)
+- Improve handling of removed NVT prefs [#1204](https://github.com/greenbone/gvmd/pull/1204)
+- Set ignore_pagination in stop_active_tasks [#1208](https://github.com/greenbone/gvmd/pull/1208)
+- Improve EXE installer NSIS script generation [#1253](https://github.com/greenbone/gvmd/pull/1253)
+- Fix alt options for radio preferences when exporting configs [#1298](https://github.com/greenbone/gvmd/pull/1298)
+- For radio prefs in GMP exclude value and include default [#1299](https://github.com/greenbone/gvmd/pull/1299)
+
+[9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
+
 ## [9.0.1] (2020-05-12)
 
 ### Added
@@ -17,7 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --rebuild [#1016](https://github.com/greenbone/gvmd/pull/1016)
 - Lock a file around the NVT sync [#1017](https://github.com/greenbone/gvmd/pull/1017)
 - Add --rebuild-scap option [#1050](https://github.com/greenbone/gvmd/pull/1050)
-
+- Trim malloc heap after updating cache [#1086](https://github.com/greenbone/gvmd/pull/1086)
 
 ### Changed
 - Extend command line options for managing scanners [#815](https://github.com/greenbone/gvmd/pull/815)

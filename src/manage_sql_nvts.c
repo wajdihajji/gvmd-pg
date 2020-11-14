@@ -758,9 +758,12 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM nvts"
-                 " WHERE cve %s '%%%s%%'"
+                 " WHERE cve %s '%%%s, %%'"
+                 "    OR cve %s '%%%s'"
                  " ORDER BY %s %s;",
                  nvt_iterator_columns (),
+                 sql_ilike_op (),
+                 cve ? cve : "",
                  sql_ilike_op (),
                  cve ? cve : "",
                  sort_field ? sort_field : "name",
@@ -1359,7 +1362,6 @@ update_nvts_from_vts (entity_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  preferences = NULL;
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
@@ -1372,18 +1374,20 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
       insert_nvt (nvti);
 
+      preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
         {
           sql_rollback ();
           return;
         }
+      sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
+           nvti_oid (nvti));
+      insert_nvt_preferences_list (preferences);
+      g_list_free_full (preferences, g_free);
 
       nvti_free (nvti);
       children = next_entities (children);
     }
-
-  insert_nvt_preferences_list (preferences);
-  g_list_free_full (preferences, g_free);
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
 
@@ -1767,6 +1771,7 @@ update_or_rebuild (int update)
   if (update == 0)
     {
       sql ("TRUNCATE nvts;");
+      sql ("TRUNCATE nvt_preferences;");
       set_nvts_feed_version ("0");
     }
 
