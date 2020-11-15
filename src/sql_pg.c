@@ -257,14 +257,11 @@ sql_open (const char *database)
   PostgresPollingStatusType poll_status;
   int socket;
 
-  conn_info = getenv ("GVMD_POSTGRESQL_URI") ?
-    g_strdup (getenv ("GVMD_POSTGRESQL_URI")) : NULL;
-  if (conn_info == NULL)
-    conn_info = g_strdup_printf ("dbname='%s' application_name='%s'",
-                                 database
-                                  ? database
-                                  : sql_default_database (),
-                                 "gvmd");
+  conn_info = g_strdup_printf ("dbname='%s' application_name='%s'",
+                               database
+                                ? database
+                                : sql_default_database (),
+                               "gvmd");
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
   if (conn == NULL)
